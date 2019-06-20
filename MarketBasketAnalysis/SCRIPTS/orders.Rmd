@@ -1,0 +1,86 @@
+---
+title: "products"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo=TRUE}
+pacman::p_load(ggplot2, dplyr, party, caret, corrplot, tidyr)
+
+
+orders <- read.csv("~/Documents/@/UBIQUM/DATAML/Week7/Market_Basket_Analysis/MarketBasketAnalysis/DATASETS/orders_translated.csv", header=TRUE, sep=";")
+
+items <- read.csv("~/Documents/@/UBIQUM/DATAML/Week7/Market_Basket_Analysis/MarketBasketAnalysis/DATASETS/lineitems.csv", header=TRUE, sep=";")
+
+trans <- read.csv("~/Documents/@/UBIQUM/DATAML/Week7/Market_Basket_Analysis/MarketBasketAnalysis/DATASETS/trans.csv", header=FALSE)
+
+
+
+str(orders)
+str(items)
+
+#Rename Orders attributes
+
+colnames(items)[2] <- "id_order"
+
+#Data types
+items$unit_price <-  as.numeric(sub(",", ".", items$unit_price, fixed = TRUE))
+orders$total_paid <- as.numeric(sub(",", ".", orders$total_paid, fixed = TRUE))
+
+
+
+#Filter more than one id_product
+
+items_twoormore <- items %>% group_by(id_order) %>% filter (n()>1)
+
+
+#How many unique id_orders do i have in Items? = 48714
+length(unique(items_twoormore$id_order))
+
+#Filter the completed orders
+orders_completed <- orders %>% filter(state=="Completed")
+
+#How many unique completed orders from 'Orders' dataset are in 'Items'  dataset? = 10453
+length(which(orders_completed$id_order %in% items_twoormore$id_order))
+
+
+#How many unique completed orders from 'Items' dataset are in 'Orders'  dataset? = 25996
+length(which(items_twoormore$id_order %in% orders_completed$id_order))
+
+
+#Get the position of the first index of each id_order from the Items dataset  
+match <- which(items_twoormore$id_order %in% orders_completed$id_order)
+items_trans <- items_twoormore[match,]
+
+
+#10453 id_orders completed
+length(unique(items_trans$id_order))
+
+
+#Combine the two datasets
+itemsSelection <-  items_trans %>% select(id_order, sku, unit_price, product_quantity )
+ordersSelection <- orders_completed %>% select(id_order, total_paid)
+
+
+itemsDef <- itemsSelection %>% inner_join(ordersSelection, by='id_order')
+
+#Get the Sum of unit_price per quantity (in the Items dataset) and compare it to the total_paid from the Orders dataset
+itemsDef <- itemsDef %>%  mutate(TotalAmount = sum(unit_price*product_quantity))
+itemsDef <- itemsDef %>%  mutate(DifAmount = round(total_paid - TotalAmount, digits=2))
+
+#How many cases we have for each difference?  = 62
+itemsDef %>% group_by(DifAmount) %>% summarise (n = n())
+#Exclude some of the most common cases
+DifferencesForPloting <- itemsDef %>% group_by(DifAmount) %>% filter(DifAmount!=	-0.01 & DifAmount!=	0 ) 
+
+#plot the differences
+hist(DifferencesForPloting$DifAmount, xlim = c(-20,60), breaks = 200)
+
+
+
+
+
+```
