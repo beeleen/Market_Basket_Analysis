@@ -8,20 +8,19 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r echo=TRUE}
-pacman::p_load(ggplot2, dplyr, party, caret, corrplot, tidyr)
+pacman::p_load(ggplot2, dplyr, party, caret, corrplot, tidyr, reshape2, stringr)
 
 
 orders <- read.csv("~/Documents/@/UBIQUM/DATAML/Week7/Market_Basket_Analysis/MarketBasketAnalysis/DATASETS/orders_translated.csv", header=TRUE, sep=";")
 
 items <- read.csv("~/Documents/@/UBIQUM/DATAML/Week7/Market_Basket_Analysis/MarketBasketAnalysis/DATASETS/lineitems.csv", header=TRUE, sep=";")
 
-trans <- read.csv("~/Documents/@/UBIQUM/DATAML/Week7/Market_Basket_Analysis/MarketBasketAnalysis/DATASETS/trans.csv", header=FALSE)
-
+trans <- read.csv("~/Documents/@/UBIQUM/DATAML/Week7/Market_Basket_Analysis/MarketBasketAnalysis/DATASETS/transac.csv", header=T)
 
 
 str(orders)
 str(items)
-
+str(trans)
 #Rename Orders attributes
 
 colnames(items)[2] <- "id_order"
@@ -30,7 +29,10 @@ colnames(items)[2] <- "id_order"
 items$unit_price <-  as.numeric(sub(",", ".", items$unit_price, fixed = TRUE))
 orders$total_paid <- as.numeric(sub(",", ".", orders$total_paid, fixed = TRUE))
 
+#Transactions table
+#trans <- select(trans,-c(6:13))
 
+########ANALYSING PRICES
 
 #Filter more than one id_product
 
@@ -46,8 +48,7 @@ orders_completed <- orders %>% filter(state=="Completed")
 #How many unique completed orders from 'Orders' dataset are in 'Items'  dataset? = 10453
 length(which(orders_completed$id_order %in% items_twoormore$id_order))
 
-
-#How many unique completed orders from 'Items' dataset are in 'Orders'  dataset? = 25996
+#How many unique completed orders from 'Items' dataset are in 'Orders'  dataset? = 25996 /DANI
 length(which(items_twoormore$id_order %in% orders_completed$id_order))
 
 
@@ -55,17 +56,21 @@ length(which(items_twoormore$id_order %in% orders_completed$id_order))
 match <- which(items_twoormore$id_order %in% orders_completed$id_order)
 items_trans <- items_twoormore[match,]
 
-
 #10453 id_orders completed
 length(unique(items_trans$id_order))
 
 
-#Combine the two datasets
+#Prepare data to combine the two datasets
 itemsSelection <-  items_trans %>% select(id_order, sku, unit_price, product_quantity )
 ordersSelection <- orders_completed %>% select(id_order, total_paid)
 
 
+
+#Combine the two datasets
 itemsDef <- itemsSelection %>% inner_join(ordersSelection, by='id_order')
+itemsDefXXX <- itemsDef %>% select(id_order,total_paid,unit_price ) %>% unique()
+
+length(unique(itemsDef$id_order))
 
 #Get the Sum of unit_price per quantity (in the Items dataset) and compare it to the total_paid from the Orders dataset
 itemsDef <- itemsDef %>%  mutate(TotalAmount = sum(unit_price*product_quantity))
@@ -80,6 +85,34 @@ DifferencesForPloting <- itemsDef %>% group_by(DifAmount) %>% filter(DifAmount!=
 hist(DifferencesForPloting$DifAmount, xlim = c(-20,60), breaks = 200)
 
 
+
+
+
+
+####ANALYSING SKUS
+
+
+
+
+#Combine SKU from the merged dataset, into one column
+items_skus <- items_trans %>% group_by(id_order) %>% mutate(TotalSkus = paste0(sku, collapse=","))
+
+head(items_skus )
+items_skus <- items_skus %>% select(TotalSkus) %>% unique()
+head(items_skus )
+
+#select only one line of sku for all items @items 
+#itemsSku <-  unique(itemsDef2 %>% select(TotalSkus))
+
+
+#Separate each item in one column
+items_skus3 <- items_skus %>% separate(TotalSkus, c('V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V9', 'V10', 'V11', 'V12', 'V13'), sep = ',')
+
+items_skus3
+
+
+
+#items_skus3 %>% group_by(DifAmount) %>% summarise (n = n())
 
 
 
