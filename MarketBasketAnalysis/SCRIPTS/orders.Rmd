@@ -113,7 +113,7 @@ items_skus3
 
 
 #items_skus3 %>% group_by(DifAmount) %>% summarise (n = n())
-
+#itemsDefCombined <- items_skus3 %>% inner_join(trans, by='id_order')
 
 
 ```

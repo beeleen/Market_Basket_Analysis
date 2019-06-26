@@ -1,0 +1,179 @@
+---
+title: "basket"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+pacman::p_load(ggplot2, dplyr, caret, tidyr,arules, arulesViz, RColorBrewer, caTools )
+
+# install.packages("arules")
+# install.packages("arulesViz")
+# library("arules")
+# library("arulesViz")
+
+
+
+#Upload and read the dataset
+tr <- read.transactions("~/Documents/@/UBIQUM/DATAML/Week7/Market_Basket_Analysis/MarketBasketAnalysis/DATASETS/ElectronidexTransactions.csv", format = 'basket', sep=',', header = F)
+
+
+
+
+#Convert dataset as transaction object
+#trObj<-as(tr,"transactions")
+
+#Summary of the data
+length (tr) # Number of transactions.
+tr
+summary(tr)
+items(tr)
+
+
+#Visualize the data
+itemFrequencyPlot(tr)
+
+#its not working!!
+#image(tr[1:500])
+#image(sample(tr, 2000))
+
+#are there any duplicate?
+#duplicated(tr) 
+
+
+
+
+#Inspect particular elements
+inspect(tr[1:100])
+
+#Items Frequency (absolute)
+#plots the numeric frequencies of each item independently
+itemFrequencyPlot(tr,topN=20,type="absolute",col=brewer.pal(8,'Pastel2'), main="Absolute Item Frequency Plot")
+
+#Items Frequency (relative)
+#plots how many times these items have appeared as compared to others. #APP0692 and APP 1184 have the most sales
+itemFrequencyPlot(tr,topN=20,type="relative",col=brewer.pal(8,'Pastel2'),main="Relative Item Frequency Plot")
+
+  
+
+#Evaluating model performance
+
+# Min Support as 0.001, confidence as 0.8.
+
+# Min Support as 0.0005, confidence as 0.8
+associationrules <- apriori(tr, parameter = list(supp=0.0005, conf=0.8))
+inspect(associationrules)
+summary(associationrules)  # 6 rules.: 6 of two products
+
+
+# Min Support as 0.0005, confidence as 0.5
+associationrules1 <- apriori(tr, parameter = list(supp=0.0005, conf=0.5)) 
+inspect(associationrules1)
+#inspect(associationrules[1:6])
+summary(associationrules1) # 48 rules: 47 rules with two products, 1 with three
+
+#set different Confidences values
+# associationrules2 <- apriori(tr, parameter = list(supp=0.0005, conf=0.6))
+# inspect(associationrules2)
+# associationrules3 <- apriori(tr, parameter = list(supp=0.0005, conf=0.7))
+# inspect(associationrules3)
+# associationrules4 <- apriori(tr, parameter = list(supp=0.0005, conf=0.9))
+# inspect(associationrules4)
+# associationrules5 <- apriori(tr, parameter = list(supp=0.0005, conf=1))
+# inspect(associationrules5)
+
+#set different Support values
+# associationrulesS1 <- apriori(tr, parameter = list(supp=0.0001, conf=0.6)) 
+# associationrulesS2 <- apriori(tr, parameter = list(supp=0.0003, conf=0.6)) 
+# associationrulesS3 <- apriori(tr, parameter = list(supp=0.0005, conf=0.6)) 
+# associationrulesS4 <- apriori(tr, parameter = list(supp=0.0005, conf=0.6)) 
+# associationrulesS5 <- apriori(tr, parameter = list(supp=0.0007, conf=0.6)) 
+# associationrulesS6 <- apriori(tr, parameter = list(supp=0.001, conf=0.6)) 
+# associationrulesS7 <- apriori(tr, parameter = list(supp=0.00001, conf=0.6)) 
+# inspect(associationrulesS7[1:100])
+# summary(associationrulesS7)
+# associationrulesS8 <- apriori(tr, parameter = list(supp=0.00009, conf=0.6)) 
+# inspect(associationrulesS8[1:100])
+# summary(associationrulesS8)
+
+
+# Min Support as 0.0003, confidence as 0.6  => 63 rules
+associationrulesS2 <- apriori(tr, parameter = list(supp=0.0003, conf=0.6)) 
+summary(associationrulesS2)
+inspect(associationrulesS2[1:10])
+
+#Inspect results
+inspect(sort(associationrulesS2,  decreasing = TRUE, by = "lift")[1:25])
+inspect(sort(associationrulesS2,  decreasing = TRUE, by = "support")[1:25])
+inspect(sort(associationrulesS2,  decreasing = TRUE, by = "confidence")[1:25])
+
+#Improving the model
+
+#Removing redundant rules (rules that are subsets of larger rules)
+associationSubsetS2<- which(colSums(is.subset(associationrulesS2, associationrulesS2)) > 1) # get subset rules in vector
+length(associationSubsetS2) #15 
+
+associationrulesNosubsets <- associationrulesS2[-associationSubsetS2] # remove subset rules.
+summary(associationrulesNosubsets) #48 rules
+inspect(associationrulesNosubsets[1:20])
+ 
+ #Look for Redundants => no redundants
+is.redundant(associationrulesNosubsets)
+
+
+#Visualizations. First approach
+
+#default plot
+#plot(associationrulesNosubsets[1:20], control=list(type="items")) 
+#graph plot
+plot(associationrulesNosubsets[1:20], method="graph", control=list(type="items"))
+#two key plot
+plot(associationrulesNosubsets,method="two-key plot")
+#parallel coordinates plot. Here we can see that when there are combined items that you take two items together that are used to determine the likely presence of a third, so here on the bottom is says Positions 2 and 1, that has to do with having two items in the basket that collectively predict a third one, and that's what it means with RHS is for right-hand side or the thing that's being predicted. 
+plot(associationrulesNosubsets[1:20], method="paracoord", control=list(type="items"))
+#matrix plot
+plot(associationrulesNosubsets[1:20], method="matrix", control=list(type="items"))
+#bubbles plot
+plot(associationrulesNosubsets[1:20], method="grouped", control=list(type="items"))
+#interactive items
+plotly_arules(associationrulesNosubsets[1:20])
+
+
+
+#Filtering rules
+
+#confidence > 0.4
+subRules<-associationrulesNosubsets[quality(associationrulesNosubsets)$confidence>0.4]
+plot(subRules)
+#top 10 by confidence
+top10subRules <- head(subRules, n = 10, by = "confidence")
+plot(top10subRules, method = "graph",  engine = "htmlwidget")
+
+
+
+
+#Visualizations. Second approach. 
+
+#Show the results sorted by accuracy, confidence and support
+
+#assign a variable for each parameter
+AssocConf <- sort(associationrulesS2,  decreasing = TRUE, by = "confidence")
+AssocLift <- sort(associationrulesS2,  decreasing = TRUE, by = "lift")
+AssocSupp <- sort(associationrulesS2,  decreasing = TRUE, by = "support")
+
+#plot top 20 rules
+
+#two key plot
+plot(AssocConf,method="two-key plot")
+#paracoord
+plot(AssocConf[1:20], method="paracoord", control=list(type="items"))
+#interactive
+plotly_arules(AssocConf[1:20])
+
+
+```
+
+
