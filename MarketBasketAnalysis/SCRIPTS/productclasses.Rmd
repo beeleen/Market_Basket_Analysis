@@ -18,10 +18,103 @@ When you click the **Knit** button a document will be generated that includes bo
 
 pacman::p_load(pdftools, readr, stringr, magrittr, dplyr)
 
-productCat <- pdf_data("~/Documents/@/UBIQUM/DATAML/Week7/Market_Basket_Analysis/MarketBasketAnalysis/DATASETS/products_with_category.pdf")
+#productCat <- pdf_data("~/Documents/@/UBIQUM/DATAML/Week7/Market_Basket_Analysis/MarketBasketAnalysis/DATASETS/products_with_category.pdf")
 
-head(strsplit(productCat[[1]], "\n")[[1]])
+#head(strsplit(productCat[[1]], "\n")[[1]])
 
+#Upload transactions
+trans <- read.csv("~/Documents/@/UBIQUM/DATAML/Week7/Market_Basket_Analysis/MarketBasketAnalysis/DATASETS/transac.csv", header=T)
+
+
+#Upload category csv
+productCat <- read.csv("~/Documents/@/UBIQUM/DATAML/Week7/Market_Basket_Analysis/MarketBasketAnalysis/DATASETS/products_with_category.csv", sep=',', header = T)
+
+for(x in length(trans1))
+  { 
+  for(y in length(productCat1)){ 
+  
+    if(trans1$items[x]==productCat1$sku[y]){
+     trans1$isSame <-  print("true")}
+    
+    
+}
+}
+
+trans1 <- trans[1]
+trans1 <-  trans1 %>% slice(1:50) 
+
+productCat1 <- productCat %>% slice(1740:1789)
+
+
+#trans1 %>% mutate(is.same = trans1 %in% productCat1)
+
+for(x in (1:50)) { 
+  for(y in (1:50)){ 
+    
+    trans2<- seq(trans1$items[x]==productCat1$sku[y])
+}
+          
+}
+
+
+      } 
+
+trans1$items[1]==productCat1$sku[5]
+
+str(productCat1)
+
+  trans2 <-  str_replace(as.character(trans1$items[x]),as.character(productCat1$manual_categories[y]))
+
+
+
+for (i in 1:ncol(trans1)){trans1[,i]=as.vector(trans1[,i])}
+
+#sapply(trans1, function(x) any(sapply(productCat1, str_detect, string = x)))
+
+#trans1$is.same <- as.character(gsub("IFX0049", itemsSku$TotalSkus, fixed=TRUE))
+
+
+
+#again
+
+df <- tibble(
+  word = words, 
+  i = seq_along(word)
+)
+df %>% 
+  filter(str_detect(word, "x$"))
+
+trans1$items[str_detect(trans1, "IFX0049")]
+
+
+
+
+transPrueba1 <- gsub(productCat[y,"sku"],productCat[y,"manual_categories"], trans)
+
+
+
+
+
+#otra
+listLength <- length(trans1)
+x <- listLength - 1
+y <- listLength
+k <- 47
+
+for ( i in 1:x) 
+  {
+    for (j in (i+1):y)
+      {
+        trans <- list[i] + list[j]
+        print(sumListPair)
+        if (sumListPair == k) {
+         print("TRUE") } else {
+           print ("FALSE")
+         }
+          
+        }
+      }    
+ 
 ```
 
 
